@@ -219,7 +219,7 @@ function showRecipe(r) {
     <div class="scaler">
       <label for="tg">我要做（材料總重）</label>
       <div class="srow"><input id="tg" type="number" inputmode="decimal" min="0" step="any" value="${Math.round(base * 10) / 10}"><span class="u">g</span></div>
-      <div class="quick">${[0.5, 1, 2, 3, 5].map(m => `<button data-m="${m}" class="${m === 1 ? "on" : ""}">×${m}</button>`).join("")}</div>
+      <div class="quick">${[0.5, 1, 2, 3, 4].map(m => `<button data-m="${m}" class="${m === 1 ? "on" : ""}">×${m}</button>`).join("")}</div>
     </div>
     <table class="ing"><thead><tr><th>材料</th><th>比例</th><th>原配方</th><th>換算</th></tr></thead><tbody id="tb"></tbody></table>
     <div class="hint">點一下材料可以劃掉（秤好的打勾用）</div>
