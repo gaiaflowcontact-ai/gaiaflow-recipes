@@ -81,8 +81,17 @@ table.ing tr.done td{opacity:.35;text-decoration:line-through}
 .lock .box{width:100%;max-width:340px;text-align:center}
 .lock h1{color:var(--green);font-size:22px;margin:0 0 4px}
 .lock p{color:var(--muted);font-size:14px;margin:0 0 18px}
-.lock input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);font-size:18px;text-align:center;background:var(--card)}
-.lock button{margin-top:10px;width:100%;padding:13px;border-radius:12px;border:none;background:var(--green);color:#fff;font-size:17px;font-weight:600}
+.pad{position:relative;width:280px;height:280px;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.pad .dot{fill:#cfc8b6;transition:r .12s}
+.pad .dot.on{fill:var(--green)}
+.pad .ring{fill:none;stroke:var(--green);stroke-width:2;opacity:0}
+.pad .ring.on{opacity:.35}
+.pad polyline,.pad line{stroke:var(--green);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:.55}
+.pad.bad .dot.on{fill:#b3261e}.pad.bad .ring.on{stroke:#b3261e}.pad.bad polyline{stroke:#b3261e}
+.pad.bad{animation:shake .35s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.lock .busy{color:var(--muted);font-size:14px;min-height:20px;margin-top:6px}
 .lock .err{color:#b3261e;font-size:14px;min-height:20px;margin-top:10px}
 .foot{margin-top:28px;text-align:center;color:var(--muted);font-size:12px}
 .foot button{border:none;background:none;color:var(--muted);text-decoration:underline;font-size:12px}
@@ -123,27 +132,72 @@ async function loadEnc() {
 }
 
 function showLock(msg) {
-  $app.innerHTML = `<div class="lock"><form class="box" id="f">
-    <h1>Gaia Flow 配料食譜</h1><p>請輸入廚房密碼</p>
-    <input id="pw" type="password" autocomplete="current-password" placeholder="密碼" autofocus>
-    <button type="submit">進入</button><div class="err">${esc(msg || "")}</div></form></div>`;
-  document.getElementById("f").onsubmit = async e => {
-    e.preventDefault();
-    const pw = document.getElementById("pw").value.trim();
-    if (!pw) return;
-    await unlock(pw, true);
+  const P = [], C = 280 / 3;
+  for (let i = 0; i < 9; i++) P.push({ x: C * (i % 3) + C / 2, y: C * Math.floor(i / 3) + C / 2 });
+  $app.innerHTML = `<div class="lock"><div class="box">
+    <h1>Gaia Flow 配料食譜</h1><p>請畫出解鎖圖案</p>
+    <div class="pad" id="pad"><svg viewBox="0 0 280 280">
+      <polyline id="pl" points=""/><line id="tail" x1="0" y1="0" x2="0" y2="0" style="display:none"/>
+      ${P.map((p, i) => `<circle class="ring" data-i="${i}" cx="${p.x}" cy="${p.y}" r="30"/><circle class="dot" data-i="${i}" cx="${p.x}" cy="${p.y}" r="10"/>`).join("")}
+    </svg></div>
+    <div class="err" id="err">${esc(msg || "")}</div></div></div>`;
+  const pad = document.getElementById("pad"), pl = document.getElementById("pl"), tail = document.getElementById("tail");
+  let seq = [], drawing = false, locked = false;
+  const pos = e => { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) * 280 / r.width, y: (e.clientY - r.top) * 280 / r.height }; };
+  const mark = i => {
+    if (seq.includes(i)) return;
+    const last = seq[seq.length - 1];
+    if (last !== undefined) {           // 跨過中間的點時自動加上（跟手機一樣）
+      const mid = (last + i) / 2, a = [last % 3, Math.floor(last / 3)], b = [i % 3, Math.floor(i / 3)];
+      if (Number.isInteger(mid) && (a[0] + b[0]) % 2 === 0 && (a[1] + b[1]) % 2 === 0 && !seq.includes(mid)) mark(mid);
+    }
+    seq.push(i);
+    pad.querySelectorAll(`[data-i="${i}"]`).forEach(c => c.classList.add("on"));
+    pad.querySelector(`.dot[data-i="${i}"]`).setAttribute("r", 13);
+    pl.setAttribute("points", seq.map(k => P[k].x + "," + P[k].y).join(" "));
+    if (navigator.vibrate) navigator.vibrate(8);
   };
+  const hit = p => P.findIndex(q => (q.x - p.x) ** 2 + (q.y - p.y) ** 2 < 34 * 34);
+  const reset = () => {
+    seq = []; pl.setAttribute("points", ""); tail.style.display = "none"; pad.classList.remove("bad");
+    pad.querySelectorAll(".on").forEach(c => c.classList.remove("on"));
+    pad.querySelectorAll(".dot").forEach(c => c.setAttribute("r", 10));
+  };
+  pad.addEventListener("pointerdown", e => {
+    if (locked) return; reset(); drawing = true; pad.setPointerCapture(e.pointerId);
+    const i = hit(pos(e)); if (i >= 0) mark(i);
+  });
+  pad.addEventListener("pointermove", e => {
+    if (!drawing) return; const p = pos(e); const i = hit(p); if (i >= 0) mark(i);
+    if (seq.length) { const l = P[seq[seq.length - 1]]; tail.style.display = ""; tail.setAttribute("x1", l.x); tail.setAttribute("y1", l.y); tail.setAttribute("x2", p.x); tail.setAttribute("y2", p.y); }
+  });
+  const finish = async () => {
+    if (!drawing) return; drawing = false; tail.style.display = "none";
+    if (seq.length < 4) { document.getElementById("err").textContent = seq.length ? "至少連 4 個點" : ""; setTimeout(reset, 500); return; }
+    locked = true; document.getElementById("err").textContent = "解鎖中…";
+    const ok = await unlock(seq.map(i => i + 1).join(""), true);
+    if (!ok) {
+      locked = false; pad.classList.add("bad");
+      document.getElementById("err").textContent = "圖案不對，請再試一次";
+      setTimeout(reset, 700);
+    }
+  };
+  pad.addEventListener("pointerup", finish);
+  pad.addEventListener("pointercancel", finish);
 }
 
-async function unlock(pw, fromForm) {
+async function unlock(pw, fromPad) {
   try {
     const enc = await loadEnc();
     DATA = await decrypt(enc, pw);
     store.set(KEY_PW, pw);
     route();
+    return true;
   } catch (e) {
     store.del(KEY_PW);
-    showLock(fromForm ? (e.name === "OperationError" ? "密碼不對，請再試一次" : "載入失敗：" + e.message) : "");
+    if (!fromPad) showLock();
+    else if (e.name !== "OperationError") { showLock("載入失敗：" + e.message); return true; }
+    return false;
   }
 }
 
