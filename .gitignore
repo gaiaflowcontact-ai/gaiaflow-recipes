@@ -1,0 +1,5 @@
+src/
+build-log.txt
+build.out
+build.err
+__pycache__/

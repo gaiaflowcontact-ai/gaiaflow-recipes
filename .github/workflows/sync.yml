@@ -1,0 +1,51 @@
+name: 同步配料食譜
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q openpyxl cryptography
+      - name: 同步
+        env:
+          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL }}
+          RECIPE_PASSWORD: ${{ secrets.RECIPE_PASSWORD }}
+        run: |
+          git config user.name "recipe-sync"
+          git config user.email "recipe-sync@users.noreply.github.com"
+          old_status="$(git show HEAD:sync-status.txt 2>/dev/null | tail -n +2)"
+          set +e
+          ok=0
+          if python tools/fetch_onedrive.py "$ONEDRIVE_URL" src; then
+            if python tools/build.py src "$RECIPE_PASSWORD" data/recipes.enc.json > build.out 2> build.err; then
+              cat build.out >> sync-status.txt
+              python tools/same.py data/recipes.enc.json || git add data/recipes.enc.json
+              ok=1
+            else
+              echo "整理資料失敗：" >> sync-status.txt; grep -E "File \"|Error|讀取失敗" build.err | tail -n 8 | sed "s#/home/runner/work/[^ ]*/##" | cut -c1-200 >> sync-status.txt
+            fi
+          fi
+          set -e
+          [ -f sync-status.txt ] || printf '%s\n程式意外中止\n' "$(date -u '+%Y-%m-%d %H:%M UTC')" > sync-status.txt
+          if [ -z "$RECIPE_PASSWORD" ]; then echo "RECIPE_PASSWORD 是空的" >> sync-status.txt; fi
+          if [ "$(tail -n +2 sync-status.txt)" != "$old_status" ]; then git add sync-status.txt; fi
+          if ! git diff --cached --quiet; then
+            git commit -q -m "同步配料食譜 $(date -u -d '+8 hour' '+%Y-%m-%d %H:%M')"
+            git push -q
+          fi
+          [ "$ok" = 1 ]
