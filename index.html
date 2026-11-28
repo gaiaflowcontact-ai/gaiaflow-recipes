@@ -314,6 +314,11 @@ function showRecipe(r) {
     quick.forEach(b => b.classList.toggle("on", Math.abs(+b.dataset.m * base - target) < 0.01));
     draw();
   };
+  [tg, mul].forEach(el => {          // 點進去就全選，直接打新數字取代
+    let justFocused = false;
+    el.addEventListener("focus", () => { justFocused = true; setTimeout(() => el.select(), 0); });
+    el.addEventListener("pointerup", e => { if (justFocused) { e.preventDefault(); el.select(); justFocused = false; } });
+  });
   tg.oninput = () => { const v = parseFloat(tg.value); target = v > 0 ? v : base; sync("tg"); };
   mul.oninput = () => { const v = parseFloat(mul.value); target = base * (v > 0 ? v : 1); sync("mul"); };
   quick.forEach(b => b.onclick = () => { target = base * +b.dataset.m; sync(); });
