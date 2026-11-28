@@ -74,6 +74,7 @@ table.ing tr.done td{opacity:.35;text-decoration:line-through}
 .steps{margin-top:18px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
 .steps h3{margin:0 0 8px;font-size:15px;color:var(--green)}
 .steps pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:16px;line-height:1.7}
+.steps pre b.sh{font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .steps .none{color:var(--muted)}
 .tools{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px}
 .tools button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:14px}
@@ -259,6 +260,11 @@ async function toggleWake(btn) {
   } catch (e) { btn.textContent = "這支手機不支援"; }
 }
 
+function fmtSteps(t) {
+  // 「PART 1」「步驟」這類小標題：粗體加底線
+  return String(t).split("\n").map(l => /^\s*(PART\s*\d|步驟)/i.test(l) ? `<b class="sh">${esc(l)}</b>` : esc(l)).join("\n");
+}
+
 function showRecipe(r) {
   const gItems = r.items.filter(i => i.g != null && (i.unit || "g").toLowerCase() === "g");
   const base = r.total || gItems.reduce((a, i) => a + i.g, 0) || 1;
@@ -276,7 +282,7 @@ function showRecipe(r) {
     </div>
     <table class="ing"><thead><tr><th>材料</th><th>比例</th><th>原配方</th><th>換算</th></tr></thead><tbody id="tb"></tbody></table>
     <div class="hint">點一下材料可以劃掉（秤好的打勾用）</div>
-    <div class="steps"><h3>做法</h3>${r.steps ? `<pre>${esc(r.steps)}</pre>` : `<div class="none">做法還沒補上。</div>`}</div>
+    <div class="steps"><h3>做法</h3>${r.steps ? `<pre>${fmtSteps(r.steps)}</pre>` : `<div class="none">做法還沒補上。</div>`}</div>
     ${r.steps ? `<div class="hint">※ 做法是從紙本食譜複製的，裡面的克數可能是舊版；份量請以上面的表格為準。</div>` : ""}
     <div class="tools"><button id="wake">螢幕保持亮著</button><span class="meta">資料更新：${esc(DATA.updated)}</span></div>
   </div>`;
