@@ -41,23 +41,23 @@ h2.sec{font-size:14px;color:var(--muted);margin:20px 2px 8px;font-weight:600;let
 .empty{color:var(--muted);padding:24px 4px;text-align:center}
 /* recipe page */
 .back{border:none;background:none;color:var(--green);font-size:16px;padding:6px 0;font-weight:600}
-.rhead h1{font-size:24px;margin:6px 0 4px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
-.chip{font-size:12px;padding:3px 9px;border-radius:99px}
+.rhead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:4px 0 0}
+.rhead h1{font-size:22px;margin:0;line-height:1.25}
+.rid{color:var(--muted);font-size:13px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;white-space:nowrap}
 .chip.c{background:var(--cold-soft);color:var(--cold)}
 .chip.h{background:var(--hot-soft);color:var(--hot)}
 .chip.s{background:var(--sweet-soft);color:var(--sweet)}
 .meta{color:var(--muted);font-size:13px}
-.scaler{margin:14px 0;padding:14px;border-radius:var(--r);background:var(--green-soft)}
-.scaler label{font-size:14px;color:var(--green);font-weight:600}
-.srow{display:flex;align-items:center;gap:8px;margin-top:8px}
-.srow input{width:130px;padding:10px 12px;border-radius:10px;border:1px solid #c9d6c3;font-size:22px;font-weight:700;background:#fff;text-align:right}
-.srow .u{font-size:18px;font-weight:600}
-.quick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.quick button{padding:7px 12px;border-radius:99px;border:1px solid #c9d6c3;background:#fff;font-size:14px}
+.scaler{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:4px;margin:10px -16px 10px;padding:8px 16px;background:var(--green-soft);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.scaler::-webkit-scrollbar{display:none}
+.sg{display:flex;align-items:center;gap:3px;font-size:14px;font-weight:600;color:var(--green);flex:none}
+.sg input::-webkit-inner-spin-button,.sg input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sg input{-moz-appearance:textfield;appearance:textfield;padding:6px 5px;border-radius:8px;border:1px solid #c9d6c3;font-size:16px;font-weight:700;text-align:right;background:#fff}
+#tg{width:66px}#mul{width:42px}
+.quick{display:flex;gap:2px;flex:none}
+.quick button{padding:6px 6px;border-radius:99px;border:1px solid #c9d6c3;background:#fff;font-size:13px;line-height:1}
 .quick button.on{background:var(--green);color:#fff;border-color:var(--green)}
-.custom{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:15px;color:var(--green);font-weight:600}
-.custom input{width:80px;padding:7px 10px;border-radius:10px;border:1px solid #c9d6c3;font-size:17px;font-weight:700;text-align:right;background:#fff}
 table.ing{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
 table.ing th{font-size:12px;color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line)}
 table.ing th:first-child,table.ing td:first-child{text-align:left}
@@ -268,15 +268,11 @@ function showRecipe(r) {
     <header class="top" style="position:static;border:none;padding-bottom:0">
       <button class="back" id="back">‹ 返回</button>
     </header>
-    <div class="rhead"><h1>${esc(r.name)}</h1>
-      <div class="chips">${chips}</div>
-      <div class="meta">${esc(r.id)}　原配方材料總重 ${fmt(base)} g${r.yield && Math.abs(r.yield - base) > 0.01 ? `　成品約 ${fmt(r.yield)} g` : ""}</div>
-    </div>
+    <div class="rhead"><h1>${esc(r.name)}</h1>${chips}<span class="rid">${esc(r.id)}</span></div>
     <div class="scaler">
-      <label for="tg">我要做（材料總重）</label>
-      <div class="srow"><input id="tg" type="number" inputmode="decimal" min="0" step="any" value="${Math.round(base * 10) / 10}"><span class="u">g</span></div>
-      <div class="quick">${[0.5, 1, 2, 3, 4].map(m => `<button data-m="${m}" class="${m === 1 ? "on" : ""}">×${m}</button>`).join("")}</div>
-      <div class="custom">自訂 <input id="mul" type="number" inputmode="decimal" min="0" step="any" value="1"> 倍</div>
+      <span class="sg"><input id="tg" type="number" inputmode="decimal" min="0" step="any" value="${Math.round(base * 10) / 10}">g</span>
+      <span class="quick">${[0.5, 1, 2, 3, 4].map(m => `<button data-m="${m}" class="${m === 1 ? "on" : ""}">×${m}</button>`).join("")}</span>
+      <span class="sg"><input id="mul" type="number" inputmode="decimal" min="0" step="any" value="1">倍</span>
     </div>
     <table class="ing"><thead><tr><th>材料</th><th>比例</th><th>原配方</th><th>換算</th></tr></thead><tbody id="tb"></tbody></table>
     <div class="hint">點一下材料可以劃掉（秤好的打勾用）</div>
