@@ -56,9 +56,7 @@ def from_zip(data):
         parts = [p for p in name.replace("\\", "/").split("/") if p]
         if not parts or parts[-1].startswith("~$") or not parts[-1].lower().endswith(".xlsx"):
             continue
-        if parts[-1] == "食材顯示名稱.xlsx" and len(parts) <= 2:
-            save("食材顯示名稱.xlsx", z.read(info))
-        elif parts[-1] == "配料分類表.xlsx" and len(parts) <= 2:
+        if parts[-1] == "配料分類表.xlsx" and len(parts) <= 2:
             save("配料分類表.xlsx", z.read(info))
             got_table = True
         elif len(parts) >= 2 and parts[-2] == "配料" and len(parts) <= 3:
@@ -93,8 +91,6 @@ def via_api(token):
     if "配料分類表.xlsx" not in top:
         raise RuntimeError("資料夾裡找不到 配料分類表.xlsx")
     save("配料分類表.xlsx", dl(top["配料分類表.xlsx"]))
-    if "食材顯示名稱.xlsx" in top:
-        save("食材顯示名稱.xlsx", dl(top["食材顯示名稱.xlsx"]))
     n = 0
     for it in children("配料"):
         if "file" in it and it["name"].lower().endswith(".xlsx") and not it["name"].startswith("~$"):
@@ -150,8 +146,6 @@ def via_badger(share):
     if "配料分類表.xlsx" not in top or "配料" not in top:
         raise RuntimeError("資料夾內容不符")
     save("配料分類表.xlsx", dl(top["配料分類表.xlsx"]))
-    if "食材顯示名稱.xlsx" in top:
-        save("食材顯示名稱.xlsx", dl(top["食材顯示名稱.xlsx"]))
     n = 0
     for it in children(drive, top["配料"]["id"]):
         if "file" in it and it["name"].lower().endswith(".xlsx") and not it["name"].startswith("~$"):

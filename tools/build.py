@@ -133,16 +133,17 @@ def read_prep(path):
 
 
 def read_display_names(path):
-    """食材顯示名稱.xlsx：「要調整」打勾的列，原本名稱 → 網站上顯示的名稱。"""
-    if not os.path.exists(path):
-        return {}
+    """配料分類表的「食材顯示名稱」分頁：「要調整」打勾的列，原本名稱 → 網站上顯示的名稱。"""
     try:
-        ws = openpyxl.load_workbook(path, data_only=True, read_only=True).worksheets[0]
+        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        if "食材顯示名稱" not in wb.sheetnames:
+            return {}
+        rows = list(wb["食材顯示名稱"].iter_rows(values_only=True))
     except Exception as e:
         print("食材顯示名稱讀取失敗", e, file=sys.stderr)
         return {}
     m = {}
-    for r in list(ws.iter_rows(values_only=True))[1:]:
+    for r in rows[1:]:
         r = list(r) + [None] * 3
         if r[0] and r[1] and is_checked(r[2]):
             m[str(r[0]).strip()] = str(r[1]).strip()
@@ -151,7 +152,7 @@ def read_display_names(path):
 
 def build(root):
     sel = read_selection(os.path.join(root, "配料分類表.xlsx"))
-    names = read_display_names(os.path.join(root, "食材顯示名稱.xlsx"))
+    names = read_display_names(os.path.join(root, "配料分類表.xlsx"))
     recipes, missing = [], []
     for pid, cats in sel:
         fs = glob.glob(os.path.join(root, "配料", pid + "_*.xlsx"))
