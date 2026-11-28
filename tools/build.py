@@ -69,6 +69,21 @@ def num(v):
         return None
 
 
+def tidy_steps(t):
+    """去掉開頭的「（複製自…）」那行；PART 和「步驟」前面空一行。"""
+    lines = t.replace("\r\n", "\n").split("\n")
+    if lines and lines[0].startswith("（複製自"):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines = lines[1:]
+    out = []
+    for l in lines:
+        if out and out[-1].strip() and re.match(r"\s*(PART\s*\d|步驟)", l):
+            out.append("")
+        out.append(l)
+    return "\n".join(out).strip()
+
+
 def read_prep(path):
     wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
     rows = [list(r) for r in wb["成本"].iter_rows(values_only=True)]
@@ -106,7 +121,7 @@ def read_prep(path):
             for v in r:
                 if v not in (None, ""):
                     parts.append(str(v).strip())
-        steps = "\n\n".join(parts)
+        steps = tidy_steps("\n\n".join(parts))
     return {
         "id": str(after("編號 ID") or "").strip(),
         "name": str(after("名稱") or "").strip(),
