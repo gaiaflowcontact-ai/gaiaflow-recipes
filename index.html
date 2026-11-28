@@ -215,7 +215,7 @@ function showList() {
   const q = state.q.trim().toLowerCase();
   let body = "";
   if (q) {
-    const hits = DATA.recipes.filter(r => (r.name + " " + r.id + " " + r.items.map(i => i.name).join(" ")).toLowerCase().includes(q));
+    const hits = DATA.recipes.filter(r => (r.name + " " + r.id + " " + r.items.map(i => i.name + " " + (i.orig || "")).join(" ")).toLowerCase().includes(q));
     body = hits.length ? `<h2 class="sec">搜尋結果 ${hits.length} 個</h2><div class="list">${hits.map(card).join("")}</div>`
                        : `<div class="empty">找不到「${esc(state.q)}」</div>`;
   } else {
